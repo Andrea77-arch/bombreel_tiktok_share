@@ -53,10 +53,8 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             }
 
             guard
-                let arguments =
-                    call.arguments as? [String: Any],
-                let videoPath =
-                    arguments["videoPath"] as? String,
+                let arguments = call.arguments as? [String: Any],
+                let videoPath = arguments["videoPath"] as? String,
                 !videoPath.isEmpty
             else {
                 result(
@@ -92,10 +90,7 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             videoURL = URL(fileURLWithPath: videoPath)
         }
 
-        guard
-            FileManager.default.fileExists(
-                atPath: videoURL.path
-            )
+        guard FileManager.default.fileExists(atPath: videoURL.path)
         else {
             result(
                 FlutterError(
@@ -111,6 +106,9 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             [weak self] granted in
 
             guard let self = self else {
+                DispatchQueue.main.async {
+                    result(false)
+                }
                 return
             }
 
@@ -133,6 +131,9 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
                 [weak self] localIdentifier, error in
 
                 guard let self = self else {
+                    DispatchQueue.main.async {
+                        result(false)
+                    }
                     return
                 }
 
@@ -149,9 +150,7 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
                     return
                 }
 
-                guard
-                    let localIdentifier =
-                        localIdentifier
+                guard let localIdentifier = localIdentifier
                 else {
                     DispatchQueue.main.async {
                         result(
@@ -167,8 +166,7 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
 
                 DispatchQueue.main.async {
                     self.startTikTokShare(
-                        localIdentifier:
-                            localIdentifier,
+                        localIdentifier: localIdentifier,
                         result: result
                     )
                 }
@@ -180,14 +178,10 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
         completion: @escaping (Bool) -> Void
     ) {
         if #available(iOS 14, *) {
-
             let status =
-                PHPhotoLibrary.authorizationStatus(
-                    for: .readWrite
-                )
+                PHPhotoLibrary.authorizationStatus(for: .readWrite)
 
             switch status {
-
             case .authorized, .limited:
                 completion(true)
 
@@ -206,21 +200,16 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             }
 
         } else {
-
-            let status =
-                PHPhotoLibrary.authorizationStatus()
+            let status = PHPhotoLibrary.authorizationStatus()
 
             switch status {
-
             case .authorized:
                 completion(true)
 
             case .notDetermined:
                 PHPhotoLibrary.requestAuthorization {
                     newStatus in
-                    completion(
-                        newStatus == .authorized
-                    )
+                    completion(newStatus == .authorized)
                 }
 
             default:
@@ -231,8 +220,7 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
 
     private func saveVideoToPhotos(
         videoURL: URL,
-        completion:
-            @escaping (String?, Error?) -> Void
+        completion: @escaping (String?, Error?) -> Void
     ) {
         var localIdentifier: String?
 
@@ -252,22 +240,15 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
         }) { success, error in
 
             if success,
-               let localIdentifier =
-                    localIdentifier {
-
-                completion(
-                    localIdentifier,
-                    nil
-                )
-
+               let localIdentifier = localIdentifier {
+                completion(localIdentifier, nil)
                 return
             }
 
             let finalError =
                 error ??
                 NSError(
-                    domain:
-                        "BombreelTikTokShare",
+                    domain: "BombreelTikTokShare",
                     code: 1001,
                     userInfo: [
                         NSLocalizedDescriptionKey:
@@ -275,10 +256,7 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
                     ]
                 )
 
-            completion(
-                nil,
-                finalError
-            )
+            completion(nil, finalError)
         }
     }
 
@@ -301,6 +279,9 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             [weak self] response in
 
             guard let self = self else {
+                DispatchQueue.main.async {
+                    result(false)
+                }
                 return
             }
 
@@ -315,48 +296,48 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
                 print(
                     "BombReel TikTok share returned an unknown response."
                 )
+
+                DispatchQueue.main.async {
+                    result(false)
+                }
                 return
             }
 
-            if shareResponse.errorCode ==
-                .noError {
-
+            if shareResponse.errorCode == .noError {
                 print(
                     "BombReel TikTok share completed successfully."
                 )
 
-            } else {
+                DispatchQueue.main.async {
+                    result(true)
+                }
 
+            } else {
                 print(
-                   "BombReel TikTok share failed. Error: \(shareResponse.errorCode.rawValue), share state: \(shareResponse.shareState)"
+                    "BombReel TikTok share failed. Error: \(shareResponse.errorCode.rawValue), share state: \(shareResponse.shareState)"
                 )
+
+                DispatchQueue.main.async {
+                    result(false)
+                }
             }
         }
-
-        result(true)
     }
 
     public func application(
         _ application: UIApplication,
         open url: URL,
-        options:
-            [UIApplication.OpenURLOptionsKey: Any]
-            = [:]
+        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
     ) -> Bool {
-        return TikTokURLHandler
-            .handleOpenURL(url)
+        return TikTokURLHandler.handleOpenURL(url)
     }
 
     public func application(
         _ application: UIApplication,
-        continue userActivity:
-            NSUserActivity,
+        continue userActivity: NSUserActivity,
         restorationHandler:
-            @escaping (
-                [UIUserActivityRestoring]?
-            ) -> Void
+            @escaping ([UIUserActivityRestoring]?) -> Void
     ) -> Bool {
-
         guard
             userActivity.activityType ==
                 NSUserActivityTypeBrowsingWeb
@@ -364,9 +345,8 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             return false
         }
 
-        return TikTokURLHandler
-            .handleOpenURL(
-                userActivity.webpageURL
-            )
+        return TikTokURLHandler.handleOpenURL(
+            userActivity.webpageURL
+        )
     }
 }
