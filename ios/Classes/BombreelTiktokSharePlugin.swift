@@ -6,7 +6,6 @@ import TikTokOpenShareSDK
 
 public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
 
-    private var shareRequest: TikTokShareRequest?
     private var pendingShareResult: FlutterResult?
 
     private let redirectURI =
@@ -42,7 +41,7 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             )
 
         case "shareVideo":
-            guard shareRequest == nil else {
+            guard pendingShareResult == nil else {
                 result(
                     FlutterError(
                         code: "SHARE_ALREADY_IN_PROGRESS",
@@ -272,8 +271,7 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             let finalError =
                 error ??
                 NSError(
-                    domain:
-                        "BombreelTikTokShare",
+                    domain: "BombreelTikTokShare",
                     code: 1001,
                     userInfo: [
                         NSLocalizedDescriptionKey:
@@ -301,7 +299,6 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
                 redirectURI: redirectURI
             )
 
-        shareRequest = request
         pendingShareResult = result
 
         let launched = request.send(nil)
@@ -316,19 +313,36 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
     private func finishTikTokShare(
         succeeded: Bool
     ) {
-        let result = pendingShareResult
+        guard
+            let result = pendingShareResult
+        else {
+            return
+        }
 
         pendingShareResult = nil
-        shareRequest = nil
 
         DispatchQueue.main.async {
-            result?(succeeded)
+            result(succeeded)
         }
     }
 
     private func handleTikTokShareCallback(
         url: URL
     ) -> Bool {
+        guard
+            pendingShareResult != nil
+        else {
+            return false
+        }
+
+        guard
+            url.absoluteString.hasPrefix(
+                redirectURI
+            )
+        else {
+            return false
+        }
+
         do {
             let response =
                 try TikTokShareResponse(
@@ -337,8 +351,7 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
                 )
 
             let succeeded =
-                response.errorCode == .noError &&
-                response.shareState == .success
+                response.errorCode == .noError
 
             print(
                 "BombReel TikTok callback: errorCode=\(response.errorCode.rawValue), shareState=\(response.shareState.rawValue), success=\(succeeded)"
@@ -355,7 +368,11 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
                 "BombReel TikTok callback parse failed: \(error.localizedDescription)"
             )
 
-            return false
+            finishTikTokShare(
+                succeeded: false
+            )
+
+            return true
         }
     }
 
