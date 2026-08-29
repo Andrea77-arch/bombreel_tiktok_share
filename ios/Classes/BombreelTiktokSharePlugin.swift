@@ -428,13 +428,14 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             .handleOpenURL(url)
     }
 
+    @objc(application:continueUserActivity:restorationHandler:)
     public func application(
         _ application: UIApplication,
         continue userActivity:
             NSUserActivity,
         restorationHandler:
             @escaping (
-                [UIUserActivityRestoring]?
+                [Any]?
             ) -> Void
     ) -> Bool {
 
