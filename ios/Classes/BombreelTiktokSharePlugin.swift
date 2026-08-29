@@ -326,6 +326,38 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
         }
     }
 
+    private func isTikTokRedirectURL(
+        _ url: URL
+    ) -> Bool {
+        guard
+            let expectedURL =
+                URL(string: redirectURI)
+        else {
+            return false
+        }
+
+        func normalizedPath(
+            _ path: String
+        ) -> String {
+            if path.count > 1,
+               path.hasSuffix("/") {
+                return String(
+                    path.dropLast()
+                )
+            }
+
+            return path
+        }
+
+        return
+            url.scheme?.lowercased() ==
+                expectedURL.scheme?.lowercased() &&
+            url.host?.lowercased() ==
+                expectedURL.host?.lowercased() &&
+            normalizedPath(url.path) ==
+                normalizedPath(expectedURL.path)
+    }
+
     private func handleTikTokShareCallback(
         url: URL
     ) -> Bool {
@@ -336,12 +368,14 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
         }
 
         guard
-            url.absoluteString.hasPrefix(
-                redirectURI
-            )
+            isTikTokRedirectURL(url)
         else {
             return false
         }
+
+        print(
+            "BombReel TikTok callback URL: \(url.absoluteString)"
+        )
 
         do {
             let response =
@@ -383,6 +417,13 @@ public class BombreelTiktokSharePlugin: NSObject, FlutterPlugin {
             [UIApplication.OpenURLOptionsKey: Any]
             = [:]
     ) -> Bool {
+
+        if handleTikTokShareCallback(
+            url: url
+        ) {
+            return true
+        }
+
         return TikTokURLHandler
             .handleOpenURL(url)
     }
